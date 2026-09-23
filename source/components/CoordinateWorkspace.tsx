@@ -250,6 +250,34 @@ const TOOL_META: Record<Tool, { icon: string; label: string }> = {
   intersection: { icon: "×", label: "נקודות חיתוך" },
   text: { icon: "T", label: "טקסט חופשי" },
 };
+type HelpEntry = {
+  title: string;
+  tool: Tool;
+  mode: Mode;
+  section: "shapes" | "constructions" | "text";
+  keywords: string;
+  instruction: string;
+};
+const HELP_ENTRIES: HelpEntry[] = [
+  { title: "נקודה", tool: "point", mode: "coordinates", section: "shapes", keywords: "קואורדינטות שיעורים", instruction: "בחרו נקודה ולחצו במקום הרצוי במישור. אפשר לשנות את שיעוריה במאפיינים." },
+  { title: "קטע", tool: "segment", mode: "shapes", section: "shapes", keywords: "אורך צלע", instruction: "בחרו קטע ולחצו על שתי נקודות קצה, לפי הסדר." },
+  { title: "ישר", tool: "line", mode: "shapes", section: "shapes", keywords: "משוואה קו", instruction: "בחרו ישר ולחצו על שתי נקודות שהוא עובר דרכן." },
+  { title: "מצולע", tool: "polygon", mode: "shapes", section: "shapes", keywords: "משולש מרובע שטח היקף", instruction: "בחרו מצולע ולחצו על הקודקודים לפי הסדר. לסגירה לחצו על הנקודה הראשונה או על סיום מצולע." },
+  { title: "זווית", tool: "angle", mode: "measurement", section: "shapes", keywords: "מעלות גודל", instruction: "בחרו זווית ולחצו על שלוש נקודות. הנקודה השנייה היא קודקוד הזווית." },
+  { title: "מעגל: מרכז ונקודה", tool: "circle", mode: "measurement", section: "shapes", keywords: "רדיוס", instruction: "בחרו את מרכז המעגל ואז נקודה על היקפו." },
+  { title: "מעגל: מרכז ורדיוס", tool: "circleRadius", mode: "measurement", section: "shapes", keywords: "רדיוס מספר", instruction: "בחרו מרכז, הזינו רדיוס בחלונית שנפתחת ואשרו." },
+  { title: "מעגל דרך 3 נקודות", tool: "circleThree", mode: "measurement", section: "shapes", keywords: "מעגל חוסם", instruction: "בחרו שלוש נקודות שונות שעל המעגל." },
+  { title: "נקודת אמצע", tool: "midpoint", mode: "measurement", section: "constructions", keywords: "אמצע קטע צלע", instruction: "בחרו קטע, ישר או צלע של מצולע המחוברים לשתי נקודות." },
+  { title: "מקביל", tool: "parallel", mode: "measurement", section: "constructions", keywords: "ישרים מקבילים", instruction: "בחרו קטע, ישר או צלע, ואחר כך נקודה שהישר המקביל יעבור דרכה." },
+  { title: "מאונך", tool: "perpendicular", mode: "measurement", section: "constructions", keywords: "אנך ניצב תשעים מעלות", instruction: "בחרו קטע, ישר או צלע, ואחר כך נקודה שהישר המאונך יעבור דרכה." },
+  { title: "גובה במשולש", tool: "perpendicular", mode: "measurement", section: "constructions", keywords: "גובה אנך למשולש", instruction: "צרו משולש. בכלי מאונך בחרו את הצלע שמול הקודקוד ואז את הקודקוד. מתקבל ישר מאונך; לקטע גובה סמנו את נקודת החיתוך עם הצלע וצרו קטע מהקודקוד אליה." },
+  { title: "אנך אמצעי", tool: "perpendicularBisector", mode: "measurement", section: "constructions", keywords: "חוצה קטע", instruction: "בחרו קטע, ישר או צלע המחוברים לשתי נקודות. הכלי יוצר נקודת אמצע וישר מאונך דרכה." },
+  { title: "תיכון במשולש", tool: "median", mode: "measurement", section: "constructions", keywords: "תיכון אמצע צלע", instruction: "בחרו משולש ולאחר מכן את הקודקוד שממנו יוצא התיכון." },
+  { title: "חוצה זווית", tool: "angleBisector", mode: "measurement", section: "constructions", keywords: "זוויות", instruction: "בחרו זווית קיימת; לחלופין בחרו שלוש נקודות, כשהשנייה היא קודקוד הזווית." },
+  { title: "נקודות חיתוך", tool: "intersection", mode: "measurement", section: "constructions", keywords: "מפגש ישרים", instruction: "בחרו אובייקט ראשון ואחריו אובייקט שני. אם יש חיתוך, הנקודות ייווצרו במישור." },
+  { title: "טקסט חופשי", tool: "text", mode: "coordinates", section: "text", keywords: "כיתוב הערה", instruction: "פתחו טקסט והערות, כתבו את הטקסט ואז לחצו במישור כדי למקם אותו." },
+  { title: "בחירה וגרירה", tool: "select", mode: "coordinates", section: "shapes", keywords: "הזזה עריכה מאפיינים", instruction: "בחרו אובייקט כדי לפתוח את מאפייניו. גררו נקודה או טקסט כדי להזיז אותם." },
+];
 const STROKE_STYLES: { value: StrokeStyle; label: string }[] = [
   { value: "solid", label: "רציף" },
   { value: "dashed", label: "מקווקו" },
@@ -596,6 +624,8 @@ export default function CoordinateWorkspace() {
     [editingFunctionId, setEditingFunctionId] = useState<string | null>(null);
   const [leftOpen, setLeftOpen] = useState(true),
     [rightOpen, setRightOpen] = useState(true),
+    [helpOpen, setHelpOpen] = useState(false),
+    [helpQuery, setHelpQuery] = useState(""),
     [sections, setSections] = useState<Record<string, boolean>>(
       MODE_DEFAULT_SECTIONS.coordinates,
     );
@@ -644,6 +674,23 @@ export default function CoordinateWorkspace() {
     setTool(next);
     resetPending();
   };
+  const openHelpTool = (entry: HelpEntry) => {
+    if (mode !== entry.mode) {
+      setMode(entry.mode);
+      setSections({ ...MODE_DEFAULT_SECTIONS[entry.mode], [entry.section]: true });
+    } else {
+      setSections((current) => ({ ...current, [entry.section]: true }));
+    }
+    chooseTool(entry.tool);
+    setRightOpen(true);
+    setHelpOpen(false);
+    setHelpQuery("");
+  };
+  const matchingHelp = HELP_ENTRIES.filter((entry) =>
+    `${entry.title} ${TOOL_META[entry.tool].label} ${entry.keywords} ${entry.instruction}`
+      .toLocaleLowerCase("he")
+      .includes(helpQuery.trim().toLocaleLowerCase("he")),
+  );
 
   useEffect(() => {
     let disposed = false;
@@ -3513,6 +3560,7 @@ export default function CoordinateWorkspace() {
           <span>{MODES[mode].label}</span>
         </div>
         <div className="top-actions">
+          <button onClick={() => setHelpOpen(true)}>⌕ עזרה וחיפוש כלים</button>
           <button className="new-workspace" onClick={resetWorkspace}>
             ＋ חדש
           </button>
@@ -3550,6 +3598,24 @@ export default function CoordinateWorkspace() {
           ☰ כלים
         </button>
       </header>
+      {helpOpen && (
+        <div className="help-backdrop" onMouseDown={() => setHelpOpen(false)}>
+          <section className="help-dialog" role="dialog" aria-modal="true" aria-label="עזרה וחיפוש כלים" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="help-heading"><h2>עזרה וחיפוש כלים</h2><button aria-label="סגירה" onClick={() => setHelpOpen(false)}>×</button></div>
+            <input autoFocus aria-label="חיפוש כלי או פעולה" placeholder="חפשו כלי או פעולה, למשל גובה" value={helpQuery} onChange={(event) => setHelpQuery(event.target.value)} />
+            <div className="help-results">
+              {matchingHelp.map((entry) => (
+                <article className="help-result" key={entry.title}>
+                  <div><strong>{entry.title}</strong><small>{MODES[entry.mode].label} ← {entry.section === "constructions" ? "מדידה ובניות" : entry.section === "text" ? "טקסט והערות" : "קטעים וצורות"}</small></div>
+                  <p>{entry.instruction}</p>
+                  <button onClick={() => openHelpTool(entry)}>מעבר לכלי</button>
+                </article>
+              ))}
+              {matchingHelp.length === 0 && <p className="help-empty">לא נמצא כלי מתאים. נסו לחפש בשם פעולה אחר.</p>}
+            </div>
+          </section>
+        </div>
+      )}
       {feedback && (
         <div
           className={`feedback ${feedback.includes("בהצלחה") || feedback.includes("נוסף") ? "success" : ""}`}
@@ -3569,6 +3635,7 @@ export default function CoordinateWorkspace() {
             </button>
           </div>
           <div className="workspace-controls">
+            <button className="help-side-button" onClick={() => setHelpOpen(true)}>⌕ עזרה וחיפוש כלים</button>
             <label className="field-label" htmlFor="workspace-mode">
               סביבת עבודה
             </label>
@@ -4346,7 +4413,7 @@ export default function CoordinateWorkspace() {
                               <bdi className="property-value" dir="ltr">{round(distance(segmentPoints(selected).a, segmentPoints(selected).b))}</bdi>
                             </label>
                           )}
-                          <label className="toggle">
+                          {selected.type === "line" && <label className="toggle">
                             <input
                               type="checkbox"
                               checked={selected.showLabel}
@@ -4355,9 +4422,9 @@ export default function CoordinateWorkspace() {
                               }
                             />
                             <span />
-                            {selected.type === "line" ? "הצגת משוואת הישר" : "הצגת תווית"}
-                            {selected.type === "line" && <bdi className="property-value" dir="ltr">{lineEquation(segmentPoints(selected).a, segmentPoints(selected).b)}</bdi>}
-                          </label>
+                            הצגת משוואת הישר
+                            <bdi className="property-value" dir="ltr">{lineEquation(segmentPoints(selected).a, segmentPoints(selected).b)}</bdi>
+                          </label>}
                         </>
                       )}
                       {selected.type === "angle" && (
