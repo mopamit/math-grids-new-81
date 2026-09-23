@@ -1,0 +1,12 @@
+{
+  "id": "point-basic-001",
+  "title": "הצבת נקודה במערכת צירים",
+  "mode": "basic",
+  "instruction": "סמנו את הנקודה A(3, −2) ולאחר מכן לחצו על בדיקה.",
+  "success": "מצוין! הנקודה הוצבה במקום הנכון.",
+  "retry": "עדיין לא. זכרו: 3 בציר x ו־‎−2 בציר y.",
+  "expected": { "type": "point", "x": 3, "y": -2 },
+  "viewport": { "centerX": 0, "centerY": 0, "scale": 48 },
+  "gridStep": 1,
+  "allowedTools": ["select", "point", "pan"]
+}
