@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const repositoryName = "math-grids-81";
+const repositoryName = "math-grids-new-81";
 
 const nextConfig: NextConfig = {
   output: "export",
