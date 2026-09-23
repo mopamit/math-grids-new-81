@@ -796,6 +796,32 @@ select {
   margin: 10px 0;
   font-size: 14px;
 }
+.properties .property-value {
+  margin-inline-start: auto;
+  padding: 3px 9px;
+  border: 1px solid #cfe2e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #17365e;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.properties .property-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: -4px 43px 10px 0;
+}
+.properties .property-measures bdi {
+  padding: 2px 7px;
+  border: 1px solid #dce8e9;
+  border-radius: 7px;
+  background: #fff;
+  color: #17365e;
+  font-size: 12px;
+  font-weight: 600;
+}
 .properties .colors {
   flex-wrap: wrap;
   margin: 13px 0;
@@ -1455,10 +1481,6 @@ select {
   font-size: 13px;
   font-weight: 700;
 }
-.axis-name-fields { display: grid; gap: 8px; margin: 10px 0; }
-.axis-name-fields label { font-size: 13px; font-weight: 700; color: var(--muted); }
-.axis-name-fields input { display: block; width: 100%; margin-top: 4px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; }
-.property-measure { margin: 5px 0 9px; padding: 8px 10px; border-radius: 8px; background: #f5f8f6; color: var(--ink); line-height: 1.6; }
 .name-field input {
   display: block;
   width: 100%;
@@ -1828,3 +1850,6 @@ select {
     display: none;
   }
 }
+.axis-name-fields { display: grid; gap: 8px; margin: 10px 0; }
+.axis-name-fields label { font-size: 13px; font-weight: 700; color: var(--muted); }
+.axis-name-fields input { display: block; width: 100%; margin-top: 4px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; }

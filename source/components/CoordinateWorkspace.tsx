@@ -86,7 +86,7 @@ const MODES: Record<
 > = {
   coordinates: {
     label: "נקודות ומערכת צירים",
-    description: "",
+    description: "יצירת נקודות, הזנת שיעורים, הזזה וקווי עזר לצירים",
     grade: "מתאים בעיקר לחטיבת הביניים",
   },
   shapes: {
@@ -1076,11 +1076,9 @@ export default function CoordinateWorkspace() {
     }
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 14px Arial";
-    ctx.fillText(xAxisName || "x", w - 12, Math.max(18, Math.min(h - 18, origin.y - 17)));
+    ctx.fillText(xAxisName || "x", w - 12, Math.max(15, Math.min(h - 20, origin.y - 14)));
     ctx.textAlign = "left";
-    ctx.fillText(yAxisName || "y", Math.max(12, Math.min(w - 60, origin.x + 12)), 17);
+    ctx.fillText(yAxisName || "y", Math.max(12, Math.min(w - 90, origin.x + 18)), 12);
     }
     objects
       .filter((o): o is PolygonObject => o.type === "polygon" && !o.hidden)
@@ -1101,6 +1099,34 @@ export default function CoordinateWorkspace() {
         if (o.fill) ctx.fill();
         ctx.stroke();
         ctx.restore();
+        if (o.showLengths)
+          screens.forEach((p, i) => {
+            const q = screens[(i + 1) % screens.length],
+              a = pts[i],
+              b = pts[(i + 1) % pts.length];
+            drawLabel(
+              ctx,
+              String(round(distance(a, b))),
+              (p.x + q.x) / 2,
+              (p.y + q.y) / 2,
+              o.color,
+              o.id,
+              `length-${i}`,
+            );
+          });
+        const center = screens.reduce(
+            (s, p) => ({
+              x: s.x + p.x / screens.length,
+              y: s.y + p.y / screens.length,
+            }),
+            { x: 0, y: 0 },
+          ),
+          labels = [];
+        if (o.showPerimeter)
+          labels.push(`p=${round(polygonPerimeter(pts))}`);
+        if (o.showArea) labels.push(`s=${round(polygonArea(pts))}`);
+        if (labels.length)
+          drawLabel(ctx, labels.join(" · "), center.x, center.y, o.color, o.id, "summary");
         if (o.showAngles)
           pts.forEach((p, i) => {
             const prev = pts[(i - 1 + pts.length) % pts.length],
@@ -1250,10 +1276,19 @@ export default function CoordinateWorkspace() {
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
         ctx.restore();
+        const labels = [];
+        if (o.showLength && o.type === "segment")
+          labels.push(`d=${round(distance(ep.a, ep.b))}`);
+        if (o.showSlope)
+          labels.push(
+            `m=${slope(ep.a, ep.b) === Infinity ? "לא מוגדר" : round(slope(ep.a, ep.b))}`,
+          );
         if (o.showLabel && o.type === "line")
+          labels.push(`${derivedObjectName(o, objects)}: ${lineEquation(ep.a, ep.b)}`);
+        if (labels.length)
           drawLabel(
             ctx,
-            lineEquation(ep.a, ep.b),
+            labels.join(" · "),
             (a.x + b.x) / 2,
             (a.y + b.y) / 2,
             o.color,
@@ -3613,10 +3648,10 @@ export default function CoordinateWorkspace() {
               <span />
               הצגת צירים
             </label>
-            {showAxes && <div className="axis-name-fields">
+            <div className="axis-name-fields">
               <label>שם הציר האופקי<input value={xAxisName} onChange={(e) => setXAxisName(e.target.value)} /></label>
               <label>שם הציר האנכי<input value={yAxisName} onChange={(e) => setYAxisName(e.target.value)} /></label>
-            </div>}
+            </div>
             <label className="toggle">
               <input
                 type="checkbox"
@@ -4292,11 +4327,11 @@ export default function CoordinateWorkspace() {
                               }
                             />
                             <span />
-                            שיפוע
+                            הצגת שיפוע
+                            <bdi className="property-value" dir="ltr">{slope(segmentPoints(selected).a, segmentPoints(selected).b) === Infinity ? "לא מוגדר" : round(slope(segmentPoints(selected).a, segmentPoints(selected).b))}</bdi>
                           </label>
-                          {selected.showSlope && <div className="property-measure">שיפוע: <bdi dir="ltr">{slope(segmentPoints(selected).a, segmentPoints(selected).b) === Infinity ? "לא מוגדר" : round(slope(segmentPoints(selected).a, segmentPoints(selected).b))}</bdi></div>}
                           {selected.type === "segment" && (
-                            <><label className="toggle">
+                            <label className="toggle">
                               <input
                                 type="checkbox"
                                 checked={selected.showLength}
@@ -4307,11 +4342,11 @@ export default function CoordinateWorkspace() {
                                 }
                               />
                               <span />
-                              אורך הקטע
+                              הצגת אורך
+                              <bdi className="property-value" dir="ltr">{round(distance(segmentPoints(selected).a, segmentPoints(selected).b))}</bdi>
                             </label>
-                            {selected.showLength && <div className="property-measure">אורך: <bdi dir="ltr">{round(distance(segmentPoints(selected).a, segmentPoints(selected).b))}</bdi></div>}</>
                           )}
-                          {selected.type === "line" && <label className="toggle">
+                          <label className="toggle">
                             <input
                               type="checkbox"
                               checked={selected.showLabel}
@@ -4320,8 +4355,9 @@ export default function CoordinateWorkspace() {
                               }
                             />
                             <span />
-                            הצגת משוואת הישר
-                          </label>}
+                            {selected.type === "line" ? "הצגת משוואת הישר" : "הצגת תווית"}
+                            {selected.type === "line" && <bdi className="property-value" dir="ltr">{lineEquation(segmentPoints(selected).a, segmentPoints(selected).b)}</bdi>}
+                          </label>
                         </>
                       )}
                       {selected.type === "angle" && (
@@ -4335,6 +4371,7 @@ export default function CoordinateWorkspace() {
                           />
                           <span />
                           הצגת גודל
+                          {pointById(selected.aId) && pointById(selected.vertexId) && pointById(selected.cId) && <bdi className="property-value" dir="ltr">{round(angleDegrees(pointById(selected.aId)!, pointById(selected.vertexId)!, pointById(selected.cId)!), 1)}°</bdi>}
                         </label>
                       )}
                       {selected.type === "polygon" && (
@@ -4350,7 +4387,20 @@ export default function CoordinateWorkspace() {
                             <span />
                             מילוי שקוף
                           </label>
-                          <div className="property-measure"><strong>אורכי צלעות</strong>{polygonPoints(selected).map((point, index, points) => <div key={index}>צלע {index + 1}: <bdi dir="ltr">{round(distance(point, points[(index + 1) % points.length]))}</bdi></div>)}</div>
+                          <label className="toggle">
+                            <input
+                              type="checkbox"
+                              checked={selected.showLengths}
+                              onChange={(e) =>
+                                updateSelected({
+                                  showLengths: e.target.checked,
+                                })
+                              }
+                            />
+                            <span />
+                            אורכי צלעות
+                          </label>
+                          <div className="property-measures" dir="ltr">{polygonPoints(selected).map((point, index, points) => <bdi key={index} dir="ltr">{point.name}{points[(index + 1) % points.length].name}: {round(distance(point, points[(index + 1) % points.length]))}</bdi>)}</div>
                           <label className="toggle">
                             <input
                               type="checkbox"
@@ -4362,8 +4412,33 @@ export default function CoordinateWorkspace() {
                             <span />
                             גודל זוויות
                           </label>
-                          <div className="property-measure">היקף: <bdi dir="ltr">{round(polygonPerimeter(polygonPoints(selected)))}</bdi></div>
-                          <div className="property-measure">שטח: <bdi dir="ltr">{round(polygonArea(polygonPoints(selected)))}</bdi></div>
+                          <div className="property-measures" dir="ltr">{polygonPoints(selected).map((point, index, points) => <bdi key={index} dir="ltr">∡{point.name}: {round(angleDegrees(points[(index - 1 + points.length) % points.length], point, points[(index + 1) % points.length]), 1)}°</bdi>)}</div>
+                          <label className="toggle">
+                            <input
+                              type="checkbox"
+                              checked={selected.showPerimeter}
+                              onChange={(e) =>
+                                updateSelected({
+                                  showPerimeter: e.target.checked,
+                                })
+                              }
+                            />
+                            <span />
+                            היקף
+                            <bdi className="property-value" dir="ltr">{round(polygonPerimeter(polygonPoints(selected)))}</bdi>
+                          </label>
+                          <label className="toggle">
+                            <input
+                              type="checkbox"
+                              checked={selected.showArea}
+                              onChange={(e) =>
+                                updateSelected({ showArea: e.target.checked })
+                              }
+                            />
+                            <span />
+                            שטח
+                            <bdi className="property-value" dir="ltr">{round(polygonArea(polygonPoints(selected)))}</bdi>
+                          </label>
                         </>
                       )}
                       {selected.type === "circle" && (
@@ -4419,6 +4494,7 @@ export default function CoordinateWorkspace() {
                             />
                             <span />
                             רדיוס
+                            <bdi className="property-value" dir="ltr">{round(circleData(selected).r)}</bdi>
                           </label>
                           <label className="toggle">
                             <input
@@ -4432,6 +4508,7 @@ export default function CoordinateWorkspace() {
                             />
                             <span />
                             קוטר
+                            <bdi className="property-value" dir="ltr">{round(2 * circleData(selected).r)}</bdi>
                           </label>
                           <label className="toggle">
                             <input
@@ -4445,6 +4522,7 @@ export default function CoordinateWorkspace() {
                             />
                             <span />
                             היקף
+                            <bdi className="property-value" dir="ltr">{round(2 * Math.PI * circleData(selected).r)}</bdi>
                           </label>
                           <label className="toggle">
                             <input
@@ -4456,6 +4534,7 @@ export default function CoordinateWorkspace() {
                             />
                             <span />
                             שטח
+                            <bdi className="property-value" dir="ltr">{round(Math.PI * circleData(selected).r ** 2)}</bdi>
                           </label>
                         </>
                       )}
